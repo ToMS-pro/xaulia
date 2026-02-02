@@ -173,12 +173,14 @@ function showAll(){
   document.getElementById("cryptoPanel").style.display="block";
 }
 
-// ambil harga emas dunia (USD/oz) — REAL
+// GOLD PRICE dari TradingView (AMAN CORS)
 async function fetchGold(){
   try{
-    const res = await fetch("https://api.metals.live/v1/spot/gold");
+    const res = await fetch(
+      "https://scanner.tradingview.com/symbol?symbol=TVC:GOLD&fields=close"
+    );
     const data = await res.json();
-    const gold = data[0].gold;
+    const gold = data.close;
 
     document.getElementById("goldPrice").innerText =
       gold.toFixed(2) + " USD / oz";
@@ -189,18 +191,22 @@ async function fetchGold(){
   }
 }
 
-// ambil kurs USD → IDR (auto)
+// Kurs USD → IDR
 async function fetchKurs(){
   try{
-    const res = await fetch("https://api.exchangerate.host/latest?base=USD&symbols=IDR");
+    const res = await fetch(
+      "https://api.exchangerate.host/latest?base=USD&symbols=IDR"
+    );
     const data = await res.json();
+
     document.getElementById("kurs").value =
       Math.round(data.rates.IDR);
+
     update();
   }catch(e){}
 }
 
-// hitung IDR / gram
+// Hitung IDR / gram
 function update(){
   const goldText = document.getElementById("goldPrice").innerText;
   if(!goldText.includes("USD")) return;
@@ -214,7 +220,7 @@ function update(){
     "Rp " + Math.round(rupiahGram).toLocaleString("id-ID");
 }
 
-// init
+// INIT
 fetchGold();
 fetchKurs();
 setInterval(fetchGold, 60000);
