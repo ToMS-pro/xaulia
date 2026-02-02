@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crypto & Gold Dashboard PRO</title>
+
+<style>
+body{
+  margin:0;
+  padding:70px 0 0;
+  background:#0d1117;
+  color:#eaeaea;
+  font-family:Segoe UI,Tahoma,sans-serif;
+}
+h1{
+  text-align:center;
+  color:#f5c542;
+}
+.container{
+  max-width:1200px;
+  margin:auto;
+  padding:20px;
+}
+.widget{
+  background:#161b22;
+  border-radius:14px;
+  padding:15px;
+  margin-bottom:20px;
+  box-shadow:0 0 15px rgba(0,0,0,.6);
+}
+iframe{width:100%;border:none;}
+#sticky-marquee{
+  position:fixed;
+  top:0;left:0;
+  width:100%;
+  z-index:999;
+  background:#0d1117;
+  padding:8px 0;
+}
+button{
+  background:#f5c542;
+  border:none;
+  padding:8px 14px;
+  border-radius:8px;
+  cursor:pointer;
+  font-weight:600;
+}
+button:hover{opacity:.85}
+.toggle{
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  margin-bottom:15px;
+}
+input{
+  background:#0d1117;
+  border:1px solid #333;
+  color:#fff;
+  padding:6px;
+  border-radius:6px;
+}
+.gold-box{
+  display:flex;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:10px;
+}
+.gold-box div{
+  flex:1;
+  min-width:200px;
+  background:#0d1117;
+  padding:12px;
+  border-radius:10px;
+  border:1px solid #333;
+}
+</style>
+</head>
+
+<body>
+
+<!-- MARQUEE -->
+<div id="sticky-marquee" class="widget">
+<script src="https://files.coinmarketcap.com/static/widget/coinMarquee.js"></script>
+<div id="coinmarketcap-widget-marquee"
+coins="1,1027,1321,11841,6535"
+currency="IDR"
+theme="dark"></div>
+</div>
+
+<h1>Crypto & Gold Dashboard PRO</h1>
+
+<div class="container">
+
+<!-- MODE TOGGLE -->
+<div class="widget toggle">
+  <button onclick="showGold()">🟡 GOLD ONLY</button>
+  <button onclick="showAll()">🌐 CRYPTO + GOLD</button>
+</div>
+
+<!-- GOLD PANEL -->
+<div class="widget" id="goldPanel">
+<h3>🟡 Harga Emas Dunia → Rupiah</h3>
+<div class="gold-box">
+  <div>
+    <b>Gold Spot</b>
+    <div id="goldPrice">loading...</div>
+  </div>
+  <div>
+    <b>Kurs USD/IDR</b><br>
+    <input id="kurs" value="15700" oninput="update()">
+  </div>
+  <div>
+    <b>Estimasi Harga / gram</b>
+    <div id="rupiah">-</div>
+  </div>
+</div>
+</div>
+
+<!-- TRADINGVIEW -->
+<div class="widget">
+<div class="tradingview-widget-container">
+<div class="tradingview-widget-container__widget"></div>
+
+<script src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+{
+  "width": "100%",
+  "height": 750,
+  "symbol": "TVC:GOLD",
+  "interval": "60",
+  "timezone": "Etc/UTC",
+  "theme": "dark",
+  "style": "1",
+  "allow_symbol_change": true,
+  "watchlist": [
+    "TVC:GOLD",
+    "FOREXCOM:XAUUSD",
+    "BITSTAMP:BTCUSD",
+    "BINANCE:ETHUSD",
+    "BINANCE:SOLUSD",
+    "BINANCE:BNBUSD",
+    "CRYPTO:XRPUSD",
+    "CRYPTO:AVAXUSD",
+    "CRYPTO:NEARUSD",
+    "CRYPTO:DOGEUSD"
+  ],
+  "studies": [
+    "STD;Bollinger_Bands",
+    "STD;Moving_Average_Exponential@tv-basicstudies;length=20",
+    "STD;Moving_Average_Exponential@tv-basicstudies;length=50",
+    "STD;MACD",
+    "STD;Stochastic_RSI"
+  ],
+  "details": true,
+  "hotlist": true
+}
+</script>
+</div>
+</div>
+
+<!-- CRYPTO BUBBLES -->
+<div class="widget" id="cryptoPanel">
+<iframe src="https://cryptobubbles.net" height="450"></iframe>
+</div>
+
+</div>
+
+<script>
+function showGold(){
+  document.getElementById("cryptoPanel").style.display="none";
+}
+function showAll(){
+  document.getElementById("cryptoPanel").style.display="block";
+}
+
+// ambil harga emas dunia (USD/oz) — REAL
+async function fetchGold(){
+  try{
+    const res = await fetch("https://api.metals.live/v1/spot/gold");
+    const data = await res.json();
+    const gold = data[0].gold;
+
+    document.getElementById("goldPrice").innerText =
+      gold.toFixed(2) + " USD / oz";
+
+    update();
+  }catch(e){
+    document.getElementById("goldPrice").innerText = "gagal ambil data";
+  }
+}
+
+// ambil kurs USD → IDR (auto)
+async function fetchKurs(){
+  try{
+    const res = await fetch("https://api.exchangerate.host/latest?base=USD&symbols=IDR");
+    const data = await res.json();
+    document.getElementById("kurs").value =
+      Math.round(data.rates.IDR);
+    update();
+  }catch(e){}
+}
+
+// hitung IDR / gram
+function update(){
+  const goldText = document.getElementById("goldPrice").innerText;
+  if(!goldText.includes("USD")) return;
+
+  const goldUsd = parseFloat(goldText);
+  const kurs = parseFloat(document.getElementById("kurs").value);
+
+  const rupiahGram = (goldUsd * kurs) / 31.1035;
+
+  document.getElementById("rupiah").innerText =
+    "Rp " + Math.round(rupiahGram).toLocaleString("id-ID");
+}
+
+// init
+fetchGold();
+fetchKurs();
+setInterval(fetchGold, 60000);
+</script>
+
+</body>
+</html>
